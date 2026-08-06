@@ -1,0 +1,27 @@
+{
+  "name": "@elizaos/plugin-0mod",
+  "version": "1.0.0",
+  "description": "ElizaOS plugin for 0mod HTTP 402 API Gateway (stealth-dom, airgap-scrub, rag-shrink)",
+  "main": "build/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "elizaos",
+    "eliza-plugin",
+    "x402",
+    "http-402",
+    "0mod",
+    "ai-agent-tools"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@elizaos/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
