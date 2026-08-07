@@ -1,9 +1,15 @@
 {
-  "name": "@elizaos/plugin-0mod",
-  "version": "1.0.0",
-  "description": "ElizaOS plugin for 0mod HTTP 402 API Gateway (stealth-dom, airgap-scrub, rag-shrink)",
+  "name": "@zeromodern/eliza-plugin-0mod",
+  "version": "1.1.0",
+  "description": "ElizaOS plugin that exposes 0mod API Gateway tools as Eliza actions",
   "main": "build/index.js",
   "type": "module",
+  "files": [
+    "build"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build"
@@ -16,7 +22,7 @@
     "0mod",
     "ai-agent-tools"
   ],
-  "author": "",
+  "author": "0mod <https://api.0mod.com>",
   "license": "MIT",
   "dependencies": {
     "@elizaos/core": "^0.1.0"
