@@ -1,6 +1,6 @@
 {
   "name": "@zeromodern/eliza-plugin-0mod",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "ElizaOS plugin that exposes 0mod API Gateway tools as Eliza actions",
   "main": "build/index.js",
   "type": "module",
@@ -25,9 +25,14 @@
   "author": "0mod <https://api.0mod.com>",
   "license": "MIT",
   "dependencies": {
-    "@elizaos/core": "^0.1.0"
+    "@elizaos/core": "^0.1.0",
+    "@x402/core": "^2.21.0",
+    "@x402/evm": "^2.21.0",
+    "@x402/fetch": "^2.21.0",
+    "viem": "^2.55.11"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
     "typescript": "^5.0.0"
   }
 }
