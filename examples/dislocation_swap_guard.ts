@@ -9,7 +9,7 @@
  * Solution:
  * Using @zeromodern/eliza-plugin-0mod, the agent queries real-time CEX-DEX spread
  * candles and dislocations before submitting an on-chain transaction.
- * Each check costs $0.025 - $0.080 USDC via HTTP 402 micropayments on Base, protecting
+ * Each check costs $0.015 - $0.045 USDC via HTTP 402 micropayments on Base, protecting
  * treasury funds from thousands of dollars in adverse execution slippage.
  *
  * Prerequisites:
@@ -36,7 +36,7 @@ async function guardDeFiSwap(swap: SwapRequest): Promise<{ approved: boolean; re
     throw new Error("crypto_spread_candles action not found in zeroModPlugin");
   }
 
-  // 1. Fetch the latest 15m spread candle ($0.025 USDC)
+  // 1. Fetch the latest 15m spread candle ($0.015 USDC)
   console.log(`[1/2] Checking CEX-DEX spread volatility on ${swap.pair}...`);
   let candleData: any = null;
 
@@ -68,7 +68,7 @@ async function guardDeFiSwap(swap: SwapRequest): Promise<{ approved: boolean; re
       console.log(`  ⚠️ High dislocation detected (${candleData.high_raw_spread_bps} > ${swap.maxDislocationBps} bps max allowable)`);
 
       if (dislocationAction) {
-        console.log(`[2/2] Inspecting recent dislocation ticks ($0.080 USDC)...`);
+        console.log(`[2/2] Inspecting recent dislocation ticks ($0.045 USDC)...`);
         let dislocData: any = null;
         await dislocationAction.handler(
           mockRuntime,
