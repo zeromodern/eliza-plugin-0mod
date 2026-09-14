@@ -62,6 +62,15 @@ const result = await domainCheckAction.handler(
 );
 ```
 
+## Practical Real-World Example: Autonomous DeFi Swap Guard ($1k/mo Execution Feed Alternative)
+
+DeFi agents executing swaps on Base (Aerodrome, Uniswap) are vulnerable to toxic price divergence and MEV sandwiching. Traditional institutional execution protection feeds cost $1,000+/month.
+
+Using `@zeromodern/eliza-plugin-0mod`, an agent can inspect live CEX-DEX spread candles ($0.025 USDC) and dislocation ticks ($0.080 USDC) prior to execution, halting or adjusting limit orders if adverse spread conditions are active.
+
+See [`examples/dislocation_swap_guard.ts`](./examples/dislocation_swap_guard.ts) for the full runnable script.
+
+
 ## Available Actions
 
 > 💡 **Pricing**: For live per-call pricing and endpoint status across all actions, visit [api.0mod.com](https://api.0mod.com) or fetch `https://api.0mod.com/api/v1/discovery`.
@@ -79,6 +88,11 @@ const result = await domainCheckAction.handler(
 | `EMBED_TEXT` | 768-dim text embedding generation | `{ "text": "sample text" }` |
 | `EMBED_MULTILINGUAL` | 1024-dim multilingual text embedding generation | `{ "text": "sample text" }` |
 | `SUMMARIZE_TEXT` | Executive TL;DR document summarization | `{ "text": "long text string" }` |
+| `CRYPTO_COVERAGE` | Check data coverage, supported pairs, and date boundaries | `{ "text": "coverage for AERO/USD" }` |
+| `CRYPTO_SPREAD_CANDLES` | Fetch cross-venue CEX-DEX spread candles (OHLC) | `{ "text": "spread candles AERO/USD 2026-09-14" }` |
+| `CRYPTO_DISLOCATIONS` | Fetch cross-venue market dislocation and spread arbitrage events | `{ "text": "dislocations AERO/USD 2026-09-14" }` |
+| `CRYPTO_EXECUTION_LATENCY` | Benchmark cross-venue execution speed, venue latencies, and fill rates | `{ "text": "latency benchmarks 2026-09-14" }` |
+| `CRYPTO_SHADOW_CAPACITY` | Measure uncaptured arbitrage volume capacity and capital constraint metrics | `{ "text": "shadow capacity 2026-09-14" }` |
 
 ## Ecosystem Packages
 
