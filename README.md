@@ -66,7 +66,7 @@ const result = await domainCheckAction.handler(
 
 DeFi agents executing swaps on Base (Aerodrome, Uniswap) are vulnerable to toxic price divergence and MEV sandwiching. Traditional institutional execution protection feeds cost $1,000+/month.
 
-Using `@zeromodern/eliza-plugin-0mod`, an agent can inspect live CEX-DEX spread candles ($0.015 USDC) and dislocation ticks ($0.045 USDC) prior to execution, halting or adjusting limit orders if adverse spread conditions are active.
+Using `@zeromodern/eliza-plugin-0mod`, an agent can inspect live CEX-DEX spread candles and dislocation ticks via dynamic HTTP 402 micropayments on Base (see [api.0mod.com](https://api.0mod.com) for live pricing) prior to execution, halting or adjusting limit orders if adverse spread conditions are active.
 
 See [`examples/dislocation_swap_guard.ts`](./examples/dislocation_swap_guard.ts) for the full runnable script.
 
