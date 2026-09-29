@@ -98,6 +98,42 @@ function extractDate(text: string): string | undefined {
   return match ? match[1] : undefined;
 }
 
+/**
+ * Parse the order side for a pre-trade impact simulation out of free-form prompt text.
+ * Defaults to "buy" so a malformed prompt still yields a valid, non-destructive PAPER sim
+ * (the gateway simulation is read-only and never places an order).
+ */
+function extractSide(text: string): "buy" | "sell" {
+  const match = text.match(/\b(buy|sell|long|short)\b/i);
+  if (!match) return "buy";
+  const side = match[1].toLowerCase();
+  return side === "sell" || side === "short" ? "sell" : "buy";
+}
+
+/**
+ * Parse an order size for impact simulation. The gateway requires EXACTLY ONE of
+ * `size_usd` (notional) or `size_base` (base units), so we infer which one the caller meant:
+ *   - "$25000", "25000 usd", "25000 dollars" -> { size_usd }
+ *   - "1200 base", "1200 tokens"             -> { size_base }
+ * Returning an empty object lets the caller omit both keys instead of sending `undefined`,
+ * which would otherwise trip the gateway's input validation.
+ */
+function extractOrderSize(text: string): { size_usd?: number; size_base?: number } {
+  const usdMatch =
+    text.match(/\$\s*([0-9]+(?:\.[0-9]+)?)/) ||
+    text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:usd|dollars?)\b/i);
+  if (usdMatch) {
+    const value = Number(usdMatch[1]);
+    if (Number.isFinite(value) && value > 0) return { size_usd: value };
+  }
+  const baseMatch = text.match(/([0-9]+(?:\.[0-9]+)?)\s*(?:base|tokens?)\b/i);
+  if (baseMatch) {
+    const value = Number(baseMatch[1]);
+    if (Number.isFinite(value) && value > 0) return { size_base: value };
+  }
+  return {};
+}
+
 export const stealthDomAction: PluginAction = {
   name: "STEALTH_DOM_FETCH",
   similes: ["FETCH_WEB_PAGE", "SCRAPE_URL", "GET_RAW_HTML"],
@@ -301,6 +337,52 @@ export const cryptoShadowCapacityAction: PluginAction = {
   },
 };
 
+export const cryptoLabeledDislocationsAction: PluginAction = {
+  name: "CRYPTO_LABELED_DISLOCATIONS",
+  similes: ["GET_LABELED_DISLOCATIONS", "EXECUTION_QUALITY_DISLOCATIONS", "LABELER_V2_DISLOCATIONS"],
+  description:
+    "Fetch labeler-v2 dislocation events with execution-quality annotations (status_v2, sim_net_bps, dex_fee_embedded, regime) for strategy backtesting",
+  handler: async (_runtime: any, message: any, _state?: any, _options?: any, callback?: any) => {
+    const rawText = message.content?.text || message.text || "";
+    const pair = extractPair(rawText);
+    const date = extractDate(rawText);
+    const data = await safeCallGateway("crypto/labeled-dislocations", { pair, date });
+    if (callback) callback({ text: JSON.stringify(data) });
+    return true;
+  },
+};
+
+export const cryptoAttributedExecutionsAction: PluginAction = {
+  name: "CRYPTO_ATTRIBUTED_EXECUTIONS",
+  similes: ["GET_ATTRIBUTED_EXECUTIONS", "PER_ARM_EXECUTIONS", "REALIZED_EXECUTIONS"],
+  description:
+    "Fetch per-arm attributed fill observations (config_hash, arm_id, realized_net_usd, belt_cost) from the realized trade ledger for AutoTune/reward analysis",
+  handler: async (_runtime: any, message: any, _state?: any, _options?: any, callback?: any) => {
+    const rawText = message.content?.text || message.text || "";
+    const pair = extractPair(rawText);
+    const date = extractDate(rawText);
+    const data = await safeCallGateway("crypto/attributed-executions", { pair, date });
+    if (callback) callback({ text: JSON.stringify(data) });
+    return true;
+  },
+};
+
+export const cryptoImpactSimulationAction: PluginAction = {
+  name: "CRYPTO_IMPACT_SIMULATION",
+  similes: ["SIMULATE_TRADE_IMPACT", "PRETRADE_IMPACT_CHECK", "SLIPPAGE_SIMULATION"],
+  description:
+    "Pre-trade impact simulation against the LIVE L2 book: expected fill price (VWAP), slippage bps, fillable size and partial/full fill probabilities (read-only PAPER, no order placed)",
+  handler: async (_runtime: any, message: any, _state?: any, _options?: any, callback?: any) => {
+    const rawText = message.content?.text || message.text || "";
+    const pair = extractPair(rawText);
+    const side = extractSide(rawText);
+    const size = extractOrderSize(rawText);
+    const data = await safeCallGateway("crypto/impact-simulation", { pair, side, ...size });
+    if (callback) callback({ text: JSON.stringify(data) });
+    return true;
+  },
+};
+
 export const zeroModPlugin = {
   name: "0mod-gateway",
   description: "0mod HTTP 402 Payment-gated edge tools for autonomous bots",
@@ -321,6 +403,9 @@ export const zeroModPlugin = {
     cryptoDislocationsAction,
     cryptoExecutionLatencyAction,
     cryptoShadowCapacityAction,
+    cryptoLabeledDislocationsAction,
+    cryptoAttributedExecutionsAction,
+    cryptoImpactSimulationAction,
   ],
   evaluators: [],
   providers: [],
