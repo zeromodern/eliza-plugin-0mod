@@ -75,24 +75,104 @@ See [`examples/dislocation_swap_guard.ts`](./examples/dislocation_swap_guard.ts)
 
 > 💡 **Pricing**: For live per-call pricing and endpoint status across all actions, visit [api.0mod.com](https://api.0mod.com) or fetch `https://api.0mod.com/api/v1/discovery`.
 
-| Action Name | Description | Input Payload Example |
-| :--- | :--- | :--- |
-| `STEALTH_DOM_FETCH` | Headless web page fetch from Cloudflare edge | `{ "text": "https://example.com" }` |
-| `AIRGAP_PII_SCRUB` | Redact SSN, phone, email, ZIP via Workers AI | `{ "text": "Call me at 555-0199" }` |
-| `RAG_SHRINK_HTML` | Strip HTML boilerplate to clean Markdown for RAG | `{ "text": "<html>...</html>" }` |
-| `CODE_DENOISE` | Remove comments, docstrings, sourcemaps from code | `{ "text": "const x = 1;" }` |
-| `DOMAIN_CHECK` | Query RDAP registry for domain availability | `{ "text": "example.com" }` |
-| `DEX_PRICE_SUMMARY` | Real-time DEX token price, volume, liquidity | `{ "text": "USDC" }` |
-| `X_SENTIMENT` | Social & market sentiment scoring | `{ "text": "crypto market" }` |
-| `IMAGE_OCR_SHRINK` | Vision OCR text and table extraction | `{ "text": "https://..." }` |
-| `EMBED_TEXT` | 768-dim text embedding generation | `{ "text": "sample text" }` |
-| `EMBED_MULTILINGUAL` | 1024-dim multilingual text embedding generation | `{ "text": "sample text" }` |
-| `SUMMARIZE_TEXT` | Executive TL;DR document summarization | `{ "text": "long text string" }` |
-| `CRYPTO_COVERAGE` | Check data coverage, supported pairs, and date boundaries | `{ "text": "coverage for AERO/USD" }` |
-| `CRYPTO_SPREAD_CANDLES` | Fetch cross-venue CEX-DEX spread candles (OHLC) | `{ "text": "spread candles AERO/USD 2026-09-14" }` |
-| `CRYPTO_DISLOCATIONS` | Fetch cross-venue market dislocation and spread arbitrage events | `{ "text": "dislocations AERO/USD 2026-09-14" }` |
-| `CRYPTO_EXECUTION_LATENCY` | Benchmark cross-venue execution speed, venue latencies, and fill rates | `{ "text": "latency benchmarks 2026-09-14" }` |
-| `CRYPTO_SHADOW_CAPACITY` | Measure uncaptured arbitrage volume capacity and capital constraint metrics | `{ "text": "shadow capacity 2026-09-14" }` |
+| Action Name | Description | Price | Input Payload Example |
+| :--- | :--- | :--- | :--- |
+| `STEALTH_DOM_FETCH` | Headless web page fetch from Cloudflare edge | dynamic | `{ "text": "https://example.com" }` |
+| `AIRGAP_PII_SCRUB` | Redact SSN, phone, email, ZIP via Workers AI | dynamic | `{ "text": "Call me at 555-0199" }` |
+| `RAG_SHRINK_HTML` | Strip HTML boilerplate to clean Markdown for RAG | dynamic | `{ "text": "<html>...</html>" }` |
+| `CODE_DENOISE` | Remove comments, docstrings, sourcemaps from code | dynamic | `{ "text": "const x = 1;" }` |
+| `DOMAIN_CHECK` | Query RDAP registry for domain availability | dynamic | `{ "text": "example.com" }` |
+| `DEX_PRICE_SUMMARY` | Real-time DEX token price, volume, liquidity | dynamic | `{ "text": "USDC" }` |
+| `X_SENTIMENT` | Social & market sentiment scoring | dynamic | `{ "text": "crypto market" }` |
+| `IMAGE_OCR_SHRINK` | Vision OCR text and table extraction | dynamic | `{ "text": "https://..." }` |
+| `EMBED_TEXT` | 768-dim text embedding generation | dynamic | `{ "text": "sample text" }` |
+| `EMBED_MULTILINGUAL` | 1024-dim multilingual text embedding generation | dynamic | `{ "text": "sample text" }` |
+| `SUMMARIZE_TEXT` | Executive TL;DR document summarization | dynamic | `{ "text": "long text string" }` |
+| `CRYPTO_COVERAGE` | Check data coverage, supported pairs, and date boundaries | dynamic | `{ "text": "coverage for AERO/USD" }` |
+| `CRYPTO_SPREAD_CANDLES` | Fetch cross-venue CEX-DEX spread candles (OHLC) | dynamic | `{ "text": "spread candles AERO/USD 2026-09-14" }` |
+| `CRYPTO_DISLOCATIONS` | Fetch cross-venue market dislocation and spread arbitrage events | dynamic | `{ "text": "dislocations AERO/USD 2026-09-14" }` |
+| `CRYPTO_EXECUTION_LATENCY` | Benchmark cross-venue execution speed, venue latencies, and fill rates | dynamic | `{ "text": "latency benchmarks 2026-09-14" }` |
+| `CRYPTO_SHADOW_CAPACITY` | Measure uncaptured arbitrage volume capacity and capital constraint metrics | dynamic | `{ "text": "shadow capacity 2026-09-14" }` |
+| `CRYPTO_LABELED_DISLOCATIONS` | Labeler-v2 dislocation events with execution-quality annotations | **$0.075/call** | `{ "text": "labeled dislocations AERO/USD 2026-09-14" }` |
+| `CRYPTO_ATTRIBUTED_EXECUTIONS` | Per-arm attributed realized fills for AutoTune/reward analysis | **$0.075/call** | `{ "text": "attributed executions AERO/USD 2026-09-14" }` |
+| `CRYPTO_IMPACT_SIMULATION` | Pre-trade impact sim vs LIVE L2 book (VWAP, slippage, fill probability) | **$0.075/call** | `{ "text": "simulate buy $25000 impact on AERO/USD" }` |
+
+> ℹ️ Legacy utility actions are priced dynamically by the gateway; the three new crypto SKUs are flat **$0.075 USDC per call** on Base (`eip155:8453`). All prices are per HTTP 402 micropayment and are settled automatically when `PAYER_PRIVATE_KEY` is set.
+
+### Usage Example: `CRYPTO_LABELED_DISLOCATIONS`
+
+Labeler-v2 dislocation ticks carry execution-quality fields (`status_v2`, `sim_net_bps`, `dex_fee_embedded`, `regime`) that the raw `/dislocations` feed lacks — use them to backtest only the dislocations that were actually *capturable* net of DEX fees.
+
+```typescript
+import { zeroModPlugin } from "@zeromodern/eliza-plugin-0mod";
+
+const action = zeroModPlugin.actions.find(a => a.name === "CRYPTO_LABELED_DISLOCATIONS")!;
+
+await action.handler(
+  {},
+  { content: { text: "labeled dislocations AERO/USD 2026-09-14" } },
+  undefined,
+  undefined,
+  (response: any) => {
+    const { dislocations } = JSON.parse(response.text);
+    const capturable = dislocations.filter((d: any) => d.status_v2 === "capturable");
+    console.log(`${capturable.length} capturable ticks, mean sim_net_bps =`,
+      capturable.reduce((s: number, d: any) => s + d.sim_net_bps, 0) / capturable.length);
+  }
+);
+```
+
+### Usage Example: `CRYPTO_ATTRIBUTED_EXECUTIONS`
+
+Per-arm realized fills from the trade ledger — the ground-truth counterpart to the simulated dislocations above. Group by `arm_id` to compare which strategy arm actually earned `realized_net_usd` net of `belt_cost`.
+
+```typescript
+import { zeroModPlugin } from "@zeromodern/eliza-plugin-0mod";
+
+const action = zeroModPlugin.actions.find(a => a.name === "CRYPTO_ATTRIBUTED_EXECUTIONS")!;
+
+await action.handler(
+  {},
+  { content: { text: "attributed executions AERO/USD 2026-09-14" } },
+  undefined,
+  undefined,
+  (response: any) => {
+    const { executions } = JSON.parse(response.text);
+    // Sum realized P&L per arm, keyed by the config hash that produced each fill.
+    const byArm = new Map<string, number>();
+    for (const e of executions) {
+      byArm.set(e.arm_id, (byArm.get(e.arm_id) ?? 0) + e.realized_net_usd);
+    }
+    console.table([...byArm].map(([arm_id, net_usd]) => ({ arm_id, net_usd })));
+  }
+);
+```
+
+### Usage Example: `CRYPTO_IMPACT_SIMULATION`
+
+Pre-flight every swap: ask the gateway what a hypothetical order would actually do to the live L2 book *before* touching custody. `executable: false` (or a low `fill_ratio`) means the order would sweep too deep and should be resized.
+
+```typescript
+import { zeroModPlugin } from "@zeromodern/eliza-plugin-0mod";
+
+const action = zeroModPlugin.actions.find(a => a.name === "CRYPTO_IMPACT_SIMULATION")!;
+
+// "buy" + "$25000" are parsed into { side: "buy", size_usd: 25000 } by the action's handler.
+await action.handler(
+  {},
+  { content: { text: "simulate buy $25000 impact on AERO/USD" } },
+  undefined,
+  undefined,
+  (response: any) => {
+    const sim = JSON.parse(response.text);
+    console.log(`VWAP ${sim.expected_fill_price} · slippage ${sim.slippage_bps} bps · fill ratio ${sim.fill_ratio}`);
+    if (!sim.executable || sim.fill_ratio < 0.9) {
+      throw new Error(`Order too large: only ${sim.fillable_size_usd} USD fillable. Resize before executing.`);
+    }
+  }
+);
+```
+
 
 ## Ecosystem Packages
 
