@@ -62,6 +62,15 @@ const result = await domainCheckAction.handler(
 );
 ```
 
+## Practical Real-World Example: Autonomous DeFi Swap Guard ($1k/mo Execution Feed Alternative)
+
+DeFi agents executing swaps on Base (Aerodrome, Uniswap) are vulnerable to toxic price divergence and MEV sandwiching. Traditional institutional execution protection feeds cost $1,000+/month.
+
+Using `@zeromodern/eliza-plugin-0mod`, an agent can inspect live CEX-DEX spread candles and dislocation ticks via dynamic HTTP 402 micropayments on Base (see [api.0mod.com](https://api.0mod.com) for live pricing) prior to execution, halting or adjusting limit orders if adverse spread conditions are active.
+
+See [`examples/dislocation_swap_guard.ts`](./examples/dislocation_swap_guard.ts) for the full runnable script.
+
+
 ## Available Actions
 
 > 💡 **Pricing**: For live per-call pricing and endpoint status across all actions, visit [api.0mod.com](https://api.0mod.com) or fetch `https://api.0mod.com/api/v1/discovery`.
@@ -79,6 +88,11 @@ const result = await domainCheckAction.handler(
 | `EMBED_TEXT` | 768-dim text embedding generation | `{ "text": "sample text" }` |
 | `EMBED_MULTILINGUAL` | 1024-dim multilingual text embedding generation | `{ "text": "sample text" }` |
 | `SUMMARIZE_TEXT` | Executive TL;DR document summarization | `{ "text": "long text string" }` |
+| `CRYPTO_COVERAGE` | Check data coverage, supported pairs, and date boundaries | `{ "text": "coverage for AERO/USD" }` |
+| `CRYPTO_SPREAD_CANDLES` | Fetch cross-venue CEX-DEX spread candles (OHLC) | `{ "text": "spread candles AERO/USD 2026-09-14" }` |
+| `CRYPTO_DISLOCATIONS` | Fetch cross-venue market dislocation and spread arbitrage events | `{ "text": "dislocations AERO/USD 2026-09-14" }` |
+| `CRYPTO_EXECUTION_LATENCY` | Benchmark cross-venue execution speed, venue latencies, and fill rates | `{ "text": "latency benchmarks 2026-09-14" }` |
+| `CRYPTO_SHADOW_CAPACITY` | Measure uncaptured arbitrage volume capacity and capital constraint metrics | `{ "text": "shadow capacity 2026-09-14" }` |
 
 ## Ecosystem Packages
 
@@ -91,6 +105,22 @@ const result = await domainCheckAction.handler(
 
 - **Actions not loading:** Verify the plugin string matches exactly: `"@zeromodern/eliza-plugin-0mod"` in your character config.
 - **Payment / Auth errors:** Ensure `PAYER_PRIVATE_KEY` is set with a valid Base EVM private key holding a USDC balance for x402 micropayments.
+
+## Release Process
+
+Releases are fully automated with [semantic-release](https://semantic-release.gitbook.io/) driven by [Conventional Commits](https://www.conventionalcommits.org/).
+
+- **Commit types drive the version bump:** `fix:` → patch, `feat:` → minor, `BREAKING CHANGE:` (or a `!` after the type) → major. `chore:`, `docs:`, `refactor:` etc. do not cut a release on their own.
+- On every push to `master`, [`.github/workflows/release.yml`](./.github/workflows/release.yml) runs semantic-release, which:
+  1. determines the next version from the commit history,
+  2. regenerates [`CHANGELOG.md`](./CHANGELOG.md),
+  3. bumps `package.json` / `package-lock.json`,
+  4. pushes the `vX.Y.Z` git tag and opens the matching GitHub Release.
+- The tag push then triggers [`.github/workflows/publish.yml`](./.github/workflows/publish.yml), which builds the package and runs `npm publish --access public --provenance` **exactly once**.
+
+> ℹ️ semantic-release is configured with `"npmPublish": false`; npm publishing lives solely in the tag-triggered `publish.yml` so the package is never published twice. TypeScript declarations (`.d.ts`) are emitted by `tsc` and shipped in the `build/` folder alongside the JavaScript.
+
+No manual version bumps, tags, or `npm publish` runs are required — just merge Conventional Commits to `master`.
 
 ## License
 

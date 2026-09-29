@@ -88,6 +88,16 @@ function extractDomain(text: string): string {
   return match ? match[0].toLowerCase() : text.trim();
 }
 
+function extractPair(text: string): string {
+  const match = text.match(/\b([A-Za-z0-9]+[\/-][A-Za-z0-9]+)\b/);
+  return match ? match[1].replace('-', '/').toUpperCase() : "AERO/USD";
+}
+
+function extractDate(text: string): string | undefined {
+  const match = text.match(/\b(\d{4}-\d{2}-\d{2})\b/);
+  return match ? match[1] : undefined;
+}
+
 export const stealthDomAction: PluginAction = {
   name: "STEALTH_DOM_FETCH",
   similes: ["FETCH_WEB_PAGE", "SCRAPE_URL", "GET_RAW_HTML"],
@@ -223,6 +233,74 @@ export const summarizeAction: PluginAction = {
   },
 };
 
+export const cryptoCoverageAction: PluginAction = {
+  name: "CRYPTO_COVERAGE",
+  similes: ["CHECK_CRYPTO_COVERAGE", "TELEMETRY_COVERAGE", "CRYPTO_BOUNDARIES"],
+  description: "Check data coverage, supported pairs, and date boundaries for crypto telemetry",
+  handler: async (_runtime: any, message: any, _state?: any, _options?: any, callback?: any) => {
+    const rawText = message.content?.text || message.text || "";
+    const pair = extractPair(rawText);
+    const data = await safeCallGateway("crypto/coverage", { pair });
+    if (callback) callback({ text: JSON.stringify(data) });
+    return true;
+  },
+};
+
+export const cryptoSpreadCandlesAction: PluginAction = {
+  name: "CRYPTO_SPREAD_CANDLES",
+  similes: ["GET_SPREAD_CANDLES", "CEX_DEX_CANDLES", "SPREAD_OHLC"],
+  description: "Fetch cross-venue CEX-DEX spread candles (OHLC) for a token pair",
+  handler: async (_runtime: any, message: any, _state?: any, _options?: any, callback?: any) => {
+    const rawText = message.content?.text || message.text || "";
+    const pair = extractPair(rawText);
+    const date = extractDate(rawText);
+    const data = await safeCallGateway("crypto/spread-candles", { pair, date });
+    if (callback) callback({ text: JSON.stringify(data) });
+    return true;
+  },
+};
+
+export const cryptoDislocationsAction: PluginAction = {
+  name: "CRYPTO_DISLOCATIONS",
+  similes: ["GET_DISLOCATIONS", "MARKET_DISLOCATIONS", "ARBITRAGE_DISLOCATIONS"],
+  description: "Fetch cross-venue market dislocation and spread arbitrage events for a token pair",
+  handler: async (_runtime: any, message: any, _state?: any, _options?: any, callback?: any) => {
+    const rawText = message.content?.text || message.text || "";
+    const pair = extractPair(rawText);
+    const date = extractDate(rawText);
+    const data = await safeCallGateway("crypto/dislocations", { pair, date });
+    if (callback) callback({ text: JSON.stringify(data) });
+    return true;
+  },
+};
+
+export const cryptoExecutionLatencyAction: PluginAction = {
+  name: "CRYPTO_EXECUTION_LATENCY",
+  similes: ["GET_EXECUTION_LATENCY", "BENCHMARK_LATENCY", "VENUE_LATENCIES"],
+  description: "Benchmark cross-venue execution speed, venue latencies, and fill rates",
+  handler: async (_runtime: any, message: any, _state?: any, _options?: any, callback?: any) => {
+    const rawText = message.content?.text || message.text || "";
+    const date = extractDate(rawText);
+    const data = await safeCallGateway("crypto/execution-latency", { date });
+    if (callback) callback({ text: JSON.stringify(data) });
+    return true;
+  },
+};
+
+export const cryptoShadowCapacityAction: PluginAction = {
+  name: "CRYPTO_SHADOW_CAPACITY",
+  similes: ["GET_SHADOW_CAPACITY", "UNCAPTURED_VOLUME", "ARBITRAGE_CAPACITY"],
+  description: "Measure uncaptured arbitrage volume capacity and capital constraint metrics",
+  handler: async (_runtime: any, message: any, _state?: any, _options?: any, callback?: any) => {
+    const rawText = message.content?.text || message.text || "";
+    const date = extractDate(rawText);
+    const pair = extractPair(rawText);
+    const data = await safeCallGateway("crypto/shadow-capacity", { date, pair });
+    if (callback) callback({ text: JSON.stringify(data) });
+    return true;
+  },
+};
+
 export const zeroModPlugin = {
   name: "0mod-gateway",
   description: "0mod HTTP 402 Payment-gated edge tools for autonomous bots",
@@ -238,6 +316,11 @@ export const zeroModPlugin = {
     embedTextAction,
     embedMultilingualAction,
     summarizeAction,
+    cryptoCoverageAction,
+    cryptoSpreadCandlesAction,
+    cryptoDislocationsAction,
+    cryptoExecutionLatencyAction,
+    cryptoShadowCapacityAction,
   ],
   evaluators: [],
   providers: [],
