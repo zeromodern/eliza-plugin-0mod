@@ -3,7 +3,17 @@
   "version": "1.4.0",
   "description": "ElizaOS plugin that exposes 0mod API Gateway tools as Eliza actions",
   "main": "build/index.js",
+  "module": "build/index.js",
+  "types": "build/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "import": "./build/index.js",
+      "default": "./build/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "build"
   ],
@@ -12,6 +22,8 @@
   },
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "release": "semantic-release",
     "prepare": "npm run build"
   },
   "keywords": [
@@ -24,6 +36,14 @@
   ],
   "author": "0mod <https://api.0mod.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zeromodern/eliza-plugin-0mod.git"
+  },
+  "homepage": "https://github.com/zeromodern/eliza-plugin-0mod#readme",
+  "bugs": {
+    "url": "https://github.com/zeromodern/eliza-plugin-0mod/issues"
+  },
   "dependencies": {
     "@elizaos/core": "^0.1.0",
     "@x402/core": "^2.21.0",
@@ -32,7 +52,14 @@
     "viem": "^2.55.11"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.6",
+    "@semantic-release/npm": "^12.0.2",
+    "@semantic-release/release-notes-generator": "^14.1.1",
     "@types/node": "^20.19.43",
+    "semantic-release": "^24.2.0",
     "typescript": "^5.0.0"
   }
 }

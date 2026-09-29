@@ -106,6 +106,22 @@ See [`examples/dislocation_swap_guard.ts`](./examples/dislocation_swap_guard.ts)
 - **Actions not loading:** Verify the plugin string matches exactly: `"@zeromodern/eliza-plugin-0mod"` in your character config.
 - **Payment / Auth errors:** Ensure `PAYER_PRIVATE_KEY` is set with a valid Base EVM private key holding a USDC balance for x402 micropayments.
 
+## Release Process
+
+Releases are fully automated with [semantic-release](https://semantic-release.gitbook.io/) driven by [Conventional Commits](https://www.conventionalcommits.org/).
+
+- **Commit types drive the version bump:** `fix:` → patch, `feat:` → minor, `BREAKING CHANGE:` (or a `!` after the type) → major. `chore:`, `docs:`, `refactor:` etc. do not cut a release on their own.
+- On every push to `master`, [`.github/workflows/release.yml`](./.github/workflows/release.yml) runs semantic-release, which:
+  1. determines the next version from the commit history,
+  2. regenerates [`CHANGELOG.md`](./CHANGELOG.md),
+  3. bumps `package.json` / `package-lock.json`,
+  4. pushes the `vX.Y.Z` git tag and opens the matching GitHub Release.
+- The tag push then triggers [`.github/workflows/publish.yml`](./.github/workflows/publish.yml), which builds the package and runs `npm publish --access public --provenance` **exactly once**.
+
+> ℹ️ semantic-release is configured with `"npmPublish": false`; npm publishing lives solely in the tag-triggered `publish.yml` so the package is never published twice. TypeScript declarations (`.d.ts`) are emitted by `tsc` and shipped in the `build/` folder alongside the JavaScript.
+
+No manual version bumps, tags, or `npm publish` runs are required — just merge Conventional Commits to `master`.
+
 ## License
 
 MIT

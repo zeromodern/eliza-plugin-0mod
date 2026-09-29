@@ -1,8 +1,15 @@
 name: Publish Package to NPM
 
+# Single source of truth for npm publishing. The `Release` workflow runs
+# semantic-release on pushes to `master`, which creates and pushes the `vX.Y.Z`
+# tag (and bumps package.json). That tag push is what triggers this workflow.
+#
+# Do NOT also trigger this on `release: published` — semantic-release creates a
+# GitHub Release for the same tag, which would result in a double npm publish.
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read

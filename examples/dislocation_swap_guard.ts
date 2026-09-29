@@ -28,12 +28,15 @@ interface SwapRequest {
 async function guardDeFiSwap(swap: SwapRequest): Promise<{ approved: boolean; reason: string }> {
   console.log(`=== Pre-Flight Swap Guard: ${swap.pair} ($${swap.amountUsd} USD) ===`);
 
-  // Locate the crypto spread candle and dislocation actions in the plugin
-  const spreadCandleAction = zeroModPlugin.actions.find(a => a.name === "crypto_spread_candles");
-  const dislocationAction = zeroModPlugin.actions.find(a => a.name === "crypto_dislocations");
+  // Locate the crypto spread candle and dislocation actions in the plugin.
+  // NOTE: PluginAction.name is UPPERCASE (see CRYPTO_* in src/index.ts). Using the
+  // lowercase gateway endpoint slug here silently returns undefined and the guard dies
+  // with "action not found" before it can ever protect a swap.
+  const spreadCandleAction = zeroModPlugin.actions.find(a => a.name === "CRYPTO_SPREAD_CANDLES");
+  const dislocationAction = zeroModPlugin.actions.find(a => a.name === "CRYPTO_DISLOCATIONS");
 
   if (!spreadCandleAction) {
-    throw new Error("crypto_spread_candles action not found in zeroModPlugin");
+    throw new Error("CRYPTO_SPREAD_CANDLES action not found in zeroModPlugin");
   }
 
   // 1. Fetch the latest 15m spread candle
@@ -41,10 +44,11 @@ async function guardDeFiSwap(swap: SwapRequest): Promise<{ approved: boolean; re
   let candleData: any = null;
 
   const mockRuntime = {};
+  // Plugin handlers read the pair/date out of `message.content.text`, not a structured
+  // `pair` field, so the prompt text must carry the pair for extractPair() to see it.
   const candleMessage = {
     content: {
-      pair: swap.pair,
-      interval: "15m",
+      text: `spread candles ${swap.pair}`,
     },
   };
 
@@ -54,7 +58,8 @@ async function guardDeFiSwap(swap: SwapRequest): Promise<{ approved: boolean; re
     undefined,
     undefined,
     (response: any) => {
-      candleData = response.data || response;
+      // Handlers emit `{ text: JSON.stringify(data) }`; unwrap it back into an object.
+      candleData = response?.text ? JSON.parse(response.text) : response?.data || response;
     }
   );
 
@@ -72,11 +77,12 @@ async function guardDeFiSwap(swap: SwapRequest): Promise<{ approved: boolean; re
         let dislocData: any = null;
         await dislocationAction.handler(
           mockRuntime,
-          { content: { pair: swap.pair } },
+          { content: { text: `dislocations ${swap.pair}` } },
           undefined,
           undefined,
           (response: any) => {
-            dislocData = response.data || response;
+            // Same `{ text: JSON.stringify(data) }` envelope as above.
+            dislocData = response?.text ? JSON.parse(response.text) : response?.data || response;
           }
         );
 
