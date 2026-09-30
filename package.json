@@ -23,7 +23,6 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "release": "semantic-release",
     "prepare": "npm run build"
   },
   "keywords": [

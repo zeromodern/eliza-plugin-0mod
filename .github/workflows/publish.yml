@@ -1,15 +1,13 @@
 name: Publish Package to NPM
 
-# Single source of truth for npm publishing. The `Release` workflow runs
-# semantic-release on pushes to `master`, which creates and pushes the `vX.Y.Z`
-# tag (and bumps package.json). That tag push is what triggers this workflow.
-#
-# Do NOT also trigger this on `release: published` — semantic-release creates a
-# GitHub Release for the same tag, which would result in a double npm publish.
+# Single source of truth for npm publishing. Publishing is triggered ONLY when
+# the owner manually creates a GitHub Release (which creates the `vX.Y.Z` tag).
+# The owner chooses the version bump by running `npm version <major|minor|patch>`
+# before creating the release. The auto-tagging semantic-release workflow was
+# removed so pushes to `master` never cut versions or publish on their own.
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -21,6 +19,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # Guard: the GitHub Release tag (e.g. `v1.4.0`) MUST match the version in
+      # package.json. This prevents publishing a version that differs from the
+      # tag the owner manually cut. Fails loudly on mismatch.
+      - name: Verify release tag matches package.json version
+        run: |
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Release tag v${TAG_VERSION} does not match package.json version ${PKG_VERSION}. Refusing to publish."
+            exit 1
+          fi
+          echo "OK: release tag v${TAG_VERSION} matches package.json version ${PKG_VERSION}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
