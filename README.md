@@ -188,19 +188,17 @@ await action.handler(
 
 ## Release Process
 
-Releases are fully automated with [semantic-release](https://semantic-release.gitbook.io/) driven by [Conventional Commits](https://www.conventionalcommits.org/).
+Releases are cut manually by the owner via a **GitHub Release**. Creating the
+Release publishes to npm; the owner chooses the major/minor/patch bump. Pushing
+to `master` does **not** publish or create tags.
 
-- **Commit types drive the version bump:** `fix:` → patch, `feat:` → minor, `BREAKING CHANGE:` (or a `!` after the type) → major. `chore:`, `docs:`, `refactor:` etc. do not cut a release on their own.
-- On every push to `master`, [`.github/workflows/release.yml`](./.github/workflows/release.yml) runs semantic-release, which:
-  1. determines the next version from the commit history,
-  2. regenerates [`CHANGELOG.md`](./CHANGELOG.md),
-  3. bumps `package.json` / `package-lock.json`,
-  4. pushes the `vX.Y.Z` git tag and opens the matching GitHub Release.
-- The tag push then triggers [`.github/workflows/publish.yml`](./.github/workflows/publish.yml), which builds the package and runs `npm publish --access public --provenance` **exactly once**.
+1. `npm version major|minor|patch` (updates `package.json` / `package-lock.json`, creates the `vX.Y.Z` commit + tag).
+2. `git push origin master --follow-tags`.
+3. Create a GitHub Release on the matching `vX.Y.Z` tag.
+4. [`.github/workflows/publish.yml`](./.github/workflows/publish.yml) verifies the tag matches `package.json` and runs `npm publish --access public --provenance` **exactly once**.
 
-> ℹ️ semantic-release is configured with `"npmPublish": false`; npm publishing lives solely in the tag-triggered `publish.yml` so the package is never published twice. TypeScript declarations (`.d.ts`) are emitted by `tsc` and shipped in the `build/` folder alongside the JavaScript.
-
-No manual version bumps, tags, or `npm publish` runs are required — just merge Conventional Commits to `master`.
+See [RELEASING.md](./RELEASING.md) for full details, including the required
+`NPM_TOKEN` GitHub secret.
 
 ## License
 
